@@ -83,7 +83,11 @@ server <- function(input, output) {
 
     if (!is.null(input$storageselect)) {
       
-      backup <- reactiveValuesToList(storage)
+      backup <- reactiveValuesToList(storage) # !!! THIS CAUSES THE MEMORY LEAK
+      
+      # ... but I could not find any other way to keep the backup file up to 
+      # date since the downloadbutton itself has no input value I could us to 
+      # trigger this observer context.
     
       isolate({
         
