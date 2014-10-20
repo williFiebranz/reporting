@@ -5,9 +5,9 @@ library(shiny)
 
 new.storage.object <- function() {
                         list(
-                          data = matrix(1, 10^4, 10^3), # something to store
-                          flag = FALSE                  # flag to change
-                                                        #  by observer
+                          data = matrix(1, 10^3*2, 10^3*2), # something to store
+                          flag = FALSE                      # flag to change
+                                                            #  by observer
                         )
                       }
 
@@ -25,7 +25,7 @@ server <- function(input, output) {
       
       storage[[input$storageselect]][["flag"]] <- input$flag
       
-      #print("observer was triggered")
+      print("observer was triggered")
     })
   })
 
@@ -61,6 +61,53 @@ server <- function(input, output) {
     })
   })
   
+  # UI element 2
+  observe({
+    
+    if (!is.null(input$storageselect)) isolate({  
+      output$ui.flag <- renderUI({
+        if (length(names(storage)) > 0) {
+          
+          checkboxInput("flag", "Flag in storage (Click to trigger observer)", 
+                        value = storage[[input$storageselect]][["flag"]])
+          
+        } else {
+          NULL
+        }
+      })      
+    })
+  })
+  
+  # UI element 3 (with memory leak)
+  observe({
+
+    if (!is.null(input$storageselect)) {
+      
+      backup <- reactiveValuesToList(storage)
+    
+      isolate({
+        
+        output$backup <- downloadHandler(
+          
+          filename = "memory_leak_test_backup.dat",
+          content = function(file) {
+            save(backup, file = file)
+          }
+        )
+        
+        output$ui.backupbutton  <- renderUI({
+          
+           if (length(names(storage)) > 0) {
+             downloadButton("backup", "Backup")
+           } else {
+             NULL
+           }
+                   
+        })
+      })
+    }
+  })
+  
 }
 
 
@@ -71,7 +118,8 @@ ui <- shinyUI(fluidPage(
     sidebarPanel(
       div(
         uiOutput("ui.storageselect"),
-        uiOutput("ui.flag")
+        uiOutput("ui.flag"),
+        uiOutput("ui.backupbutton")
       )
     ),
     mainPanel(h5(
